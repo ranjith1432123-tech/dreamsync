@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Sleep Predictor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="background-decor" id="bg-decor"></div>
+    <div class="stars" id="stars"></div>
+
+    <main class="container">
+        <a href="index.html" class="back-link" style="display: inline-block; color: var(--text-secondary); text-decoration: none; font-size: 1.1rem; margin-bottom: 1.5rem; transition: color 0.3s;"><i class="fa-solid fa-arrow-left"></i> Back to Home</a>
+        <header>
+            <h1 class="glow-text"><i class="fa-solid fa-moon"></i> Sleep Quality Predictor</h1>
+            <p>Tweak your daily habits and watch your sleep efficiency forecast update in <strong>real-time</strong>.</p>
+        </header>
+
+        <div class="app-grid">
+            <section class="glass-card form-section tilt-effect">
+                <h2><i class="fa-solid fa-sliders"></i> Your Habits</h2>
+                <form id="sleep-form">
+                    
+                    <div class="input-group">
+                        <label for="caffeine"><i class="fa-solid fa-mug-hot"></i> Caffeine Intake (mg) <span class="val-display" id="caffeine-val">200</span></label>
+                        <input type="range" id="caffeine" min="0" max="1000" step="50" value="200" class="interactive-slider">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="screentime"><i class="fa-solid fa-mobile-screen"></i> Screen Time Before Bed (hrs) <span class="val-display" id="screentime-val">2</span></label>
+                        <input type="range" id="screentime" min="0" max="6" step="0.5" value="2" class="interactive-slider">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="exercise"><i class="fa-solid fa-person-running"></i> Exercise (minutes) <span class="val-display" id="exercise-val">30</span></label>
+                        <input type="range" id="exercise" min="0" max="180" step="10" value="30" class="interactive-slider">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="sleepduration"><i class="fa-solid fa-bed"></i> Previous Night Sleep (hrs) <span class="val-display" id="sleepduration-val">7</span></label>
+                        <input type="range" id="sleepduration" min="2" max="12" step="0.5" value="7" class="interactive-slider">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="stress"><i class="fa-solid fa-brain"></i> Stress Level (1-10) <span class="val-display" id="stress-val">5</span></label>
+                        <input type="range" id="stress" min="1" max="10" step="1" value="5" class="interactive-slider">
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label for="alcohol"><i class="fa-solid fa-wine-glass"></i> Alcohol (drinks)</label>
+                            <input type="number" id="alcohol" min="0" max="10" value="0" class="interactive-input">
+                        </div>
+                        <div class="input-group">
+                            <label for="consistency"><i class="fa-solid fa-clock"></i> Bedtime Consistency</label>
+                            <select id="consistency" class="interactive-input">
+                                <option value="high">Very Consistent</option>
+                                <option value="medium" selected>Somewhat Consistent</option>
+                                <option value="low">Inconsistent</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button type="button" class="btn-secondary" id="reset-btn"><i class="fa-solid fa-rotate-right"></i> Reset to Defaults</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="glass-card result-section tilt-effect" id="result-section">
+                <h2><i class="fa-solid fa-chart-pie"></i> Real-time Forecast</h2>
+                
+                <div class="score-container">
+                    <div class="circular-progress pulse-glow" id="score-circle">
+                        <div class="inner-circle">
+                            <span id="score-text">--</span>
+                        </div>
+                    </div>
+                    <div class="feedback">
+                        <span id="emoji-feedback" class="bounce">😴</span>
+                        <h3 id="quality-text">Analyzing...</h3>
+                    </div>
+                </div>
+
+                <div class="insights-panel" id="insights-panel">
+                    <h3><i class="fa-solid fa-lightbulb"></i> Dynamic Insights</h3>
+                    <ul id="tips-list">
+                        <!-- Tips injected via JS -->
+                    </ul>
+                </div>
+            </section>
+        </div>
+        
+    </main>
+
+    <!-- Chatbot Widget -->
+    <button class="chat-toggle-btn" id="chat-toggle-btn">
+        <i class="fa-solid fa-message"></i>
+    </button>
+    <div class="chat-window glass-card" id="chat-window" style="display: none;">
+        <div class="chat-header">
+            <h3><i class="fa-solid fa-robot"></i> SleepBot</h3>
+            <button id="close-chat-btn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="message bot-message">
+                Hello! I'm SleepBot. Ask me for tips on how to improve your sleep, or tell me about your sleep problems!
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chat-input" placeholder="e.g., How do I reduce stress?" class="interactive-input" />
+            <button id="send-chat-btn" class="btn-primary" style="padding: 0.8rem 1.5rem; font-size: 1rem;"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
