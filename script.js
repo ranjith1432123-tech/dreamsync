@@ -7,6 +7,22 @@ document.addEventListener('DOMContentLoaded', () => {
         document.documentElement.style.setProperty('--mouse-y', `${y}%`);
     });
 
+    // ============================================
+    // THEME TOGGLE
+    // ============================================
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    const savedTheme = localStorage.getItem('dreamsync-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', () => {
+            const current = document.documentElement.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('dreamsync-theme', next);
+        });
+    }
+
     const form = document.getElementById('sleep-form');
     if (!form) return; // We are on the landing page, exit early
 
@@ -35,7 +51,189 @@ document.addEventListener('DOMContentLoaded', () => {
     const tipsList = document.getElementById('tips-list');
     const resetBtn = document.getElementById('reset-btn');
 
-    // Setup Slider Fill Effect & Event Listeners
+    let currentDisplayedScore = 0;
+    let scoreAnimationId = null;
+
+    // ============================================
+    // SLEEP HISTORY (localStorage)
+    // ============================================
+    const HISTORY_KEY = 'dreamsync-history';
+    const MAX_HISTORY = 7;
+
+    const getHistory = () => {
+        try {
+            return JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
+        } catch {
+            return [];
+        }
+    };
+
+    const saveToHistory = (score) => {
+        const history = getHistory();
+        const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const entry = { score, date: today, timestamp: Date.now() };
+
+        // Replace today's entry if it exists, otherwise push
+        const todayIndex = history.findIndex(h => h.date === today);
+        if (todayIndex >= 0) {
+            history[todayIndex] = entry;
+        } else {
+            history.push(entry);
+        }
+
+        // Keep only last 7 days
+        while (history.length > MAX_HISTORY) history.shift();
+
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+        renderHistory(history);
+    };
+
+    const renderHistory = (history) => {
+        const chart = document.getElementById('history-chart');
+        const emptyMsg = document.getElementById('history-empty');
+        if (!chart) return;
+
+        if (!history || history.length === 0) {
+            chart.style.display = 'none';
+            if (emptyMsg) emptyMsg.style.display = 'block';
+            return;
+        }
+
+        chart.style.display = 'flex';
+        if (emptyMsg) emptyMsg.style.display = 'none';
+        chart.innerHTML = '';
+
+        history.forEach((entry) => {
+            const bar = document.createElement('div');
+            bar.className = 'history-bar';
+
+            const fill = document.createElement('div');
+            fill.className = 'history-bar-fill';
+            fill.setAttribute('data-score', entry.score);
+            fill.style.height = `${(entry.score / 100) * 140}px`;
+
+            if (entry.score >= 80) fill.style.background = 'var(--score-good)';
+            else if (entry.score >= 60) fill.style.background = 'var(--score-avg)';
+            else fill.style.background = 'var(--score-poor)';
+
+            const label = document.createElement('div');
+            label.className = 'history-bar-label';
+            label.textContent = entry.date;
+
+            bar.appendChild(fill);
+            bar.appendChild(label);
+            chart.appendChild(bar);
+        });
+    };
+
+    // ============================================
+    // ACHIEVEMENTS & STREAK
+    // ============================================
+    const STREAK_KEY = 'dreamsync-streak';
+    const BADGES_KEY = 'dreamsync-badges';
+
+    const getStreak = () => {
+        try {
+            const data = JSON.parse(localStorage.getItem(STREAK_KEY));
+            if (!data) return { count: 0, lastDate: null };
+            return data;
+        } catch {
+            return { count: 0, lastDate: null };
+        }
+    };
+
+    const updateStreak = () => {
+        const streak = getStreak();
+        const today = new Date().toLocaleDateString();
+
+        if (streak.lastDate === today) return streak.count; // Already counted today
+
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toLocaleDateString();
+
+        if (streak.lastDate === yesterdayStr) {
+            streak.count += 1;
+        } else if (streak.lastDate !== today) {
+            streak.count = 1;
+        }
+
+        streak.lastDate = today;
+        localStorage.setItem(STREAK_KEY, JSON.stringify(streak));
+        return streak.count;
+    };
+
+    const getBadges = () => {
+        try {
+            return JSON.parse(localStorage.getItem(BADGES_KEY)) || [];
+        } catch {
+            return [];
+        }
+    };
+
+    const awardBadge = (id, text) => {
+        const badges = getBadges();
+        if (badges.includes(id)) return false;
+        badges.push(id);
+        localStorage.setItem(BADGES_KEY, JSON.stringify(badges));
+        showAchievementToast(text);
+        return true;
+    };
+
+    const showAchievementToast = (text) => {
+        const toast = document.getElementById('achievement-toast');
+        const toastText = document.getElementById('achievement-text');
+        if (!toast || !toastText) return;
+
+        toastText.textContent = text;
+        toast.style.display = 'block';
+        toast.style.animation = 'toastIn 0.3s ease forwards';
+
+        setTimeout(() => {
+            toast.style.animation = 'toastOut 0.3s ease forwards';
+            setTimeout(() => { toast.style.display = 'none'; }, 300);
+        }, 3000);
+    };
+
+    const checkAchievements = (score) => {
+        const streak = updateStreak();
+
+        if (score >= 90) awardBadge('score-90', 'Badge Unlocked: Sleep Master (Score 90+)');
+        if (score === 100) awardBadge('score-100', 'Badge Unlocked: Perfect Score!');
+        if (streak >= 3) awardBadge('streak-3', 'Badge Unlocked: 3-Day Streak!');
+        if (streak >= 7) awardBadge('streak-7', 'Badge Unlocked: Week Warrior (7-Day Streak)');
+    };
+
+    // ============================================
+    // SCORE ANIMATION
+    // ============================================
+    const animateScore = (targetScore) => {
+        if (scoreAnimationId) cancelAnimationFrame(scoreAnimationId);
+
+        const start = currentDisplayedScore;
+        const diff = targetScore - start;
+        const duration = 400;
+        const startTime = performance.now();
+
+        const step = (now) => {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+
+            currentDisplayedScore = Math.round(start + diff * eased);
+            scoreText.textContent = currentDisplayedScore;
+
+            if (progress < 1) {
+                scoreAnimationId = requestAnimationFrame(step);
+            }
+        };
+
+        scoreAnimationId = requestAnimationFrame(step);
+    };
+
+    // ============================================
+    // SLIDER & PREDICTION LOGIC
+    // ============================================
     const updateSliderFill = (slider) => {
         const min = parseFloat(slider.min) || 0;
         const max = parseFloat(slider.max) || 100;
@@ -105,7 +303,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (tips.length === 0) tips.push("Incredible! Your habits are perfectly tuned for optimal recovery. Keep it up!");
         
-        // Return max 4 most critical tips so UI doesn't overflow
         return tips.slice(0, 4);
     };
 
@@ -128,8 +325,9 @@ document.addEventListener('DOMContentLoaded', () => {
             text = 'Poor Sleep';
         }
 
-        // Update Circle instantaneously for real-time feel
-        scoreText.textContent = score;
+        // Animated score update
+        animateScore(score);
+
         scoreCircle.style.background = `conic-gradient(${color} ${score * 3.6}deg, rgba(255,255,255,0.05) 0deg)`;
         scoreCircle.style.boxShadow = `0 0 30px ${color}60`;
         scoreText.style.background = `linear-gradient(135deg, ${color}, #fff)`;
@@ -139,7 +337,6 @@ document.addEventListener('DOMContentLoaded', () => {
         qualityText.textContent = text;
         qualityText.style.color = color;
         
-        // Update Tips with subtle animation
         tipsList.style.opacity = '0';
         setTimeout(() => {
             tipsList.innerHTML = '';
@@ -159,6 +356,30 @@ document.addEventListener('DOMContentLoaded', () => {
         updateDashboard(score, tips);
     };
 
+    // ============================================
+    // SAVE SCORE (debounced)
+    // ============================================
+    let saveTimeout = null;
+    const debouncedSave = (score) => {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+            saveToHistory(score);
+            checkAchievements(score);
+        }, 800);
+    };
+
+    // Override updatePrediction to also save
+    const originalUpdate = updatePrediction;
+    const updatePredictionWithSave = () => {
+        const score = calculateScore();
+        const tips = generateTips();
+        updateDashboard(score, tips);
+        debouncedSave(score);
+    };
+
+    // ============================================
+    // RESET BUTTON
+    // ============================================
     resetBtn.addEventListener('click', () => {
         inputs.caffeine.value = 200;
         inputs.screentime.value = 2;
@@ -176,13 +397,27 @@ document.addEventListener('DOMContentLoaded', () => {
             if(inputs[key].type === 'range') updateSliderFill(inputs[key]);
         });
 
-        updatePrediction();
+        updatePredictionWithSave();
     });
 
-    // Initialize
-    attachListeners();
-    updatePrediction();
-    // Chatbot Logic
+    // ============================================
+    // KEYBOARD SHORTCUTS
+    // ============================================
+    document.addEventListener('keydown', (e) => {
+        // Ignore if typing in an input
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+
+        if (e.key === 'r' || e.key === 'R') {
+            resetBtn.click();
+        }
+        if (e.key === 't' || e.key === 'T') {
+            themeToggleBtn.click();
+        }
+    });
+
+    // ============================================
+    // CHATBOT LOGIC
+    // ============================================
     const chatToggleBtn = document.getElementById('chat-toggle-btn');
     const chatWindow = document.getElementById('chat-window');
     const closeChatBtn = document.getElementById('close-chat-btn');
@@ -217,6 +452,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return "If you can't fall asleep after 20 minutes, get out of bed and do a relaxing activity (like reading a physical book) in dim light until you feel sleepy.";
             } else if (lowerInput.includes('consistency') || lowerInput.includes('schedule') || lowerInput.includes('routine')) {
                 return "Your circadian rhythm loves consistency! Try to wake up at the exact same time every day, even on weekends, to anchor your internal clock.";
+            } else if (lowerInput.includes('history') || lowerInput.includes('score') || lowerInput.includes('past')) {
+                return "You can see your sleep history at the bottom of the page! We track your last 7 days of scores so you can spot trends.";
+            } else if (lowerInput.includes('badge') || lowerInput.includes('streak') || lowerInput.includes('achievement')) {
+                return "Keep checking your sleep score daily to build a streak! Earn badges for milestones like 3-day streaks and high scores.";
             } else {
                 const fallbacks = [
                     "That's interesting! The key to great sleep is consistency, cool temperatures, and a dark room. What specifically are you struggling with?",
@@ -244,7 +483,6 @@ document.addEventListener('DOMContentLoaded', () => {
             appendMessage(text, true);
             chatInput.value = '';
             
-            // Simulate bot typing delay
             setTimeout(() => {
                 const response = getBotResponse(text);
                 appendMessage(response, false);
@@ -257,4 +495,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ============================================
+    // INITIALIZE
+    // ============================================
+    attachListeners();
+    updatePredictionWithSave();
+
+    // Load history on page load
+    const history = getHistory();
+    renderHistory(history);
 });
