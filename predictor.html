@@ -116,6 +116,23 @@
         </div>
     </div>
 
+    <!-- Sleep History Section -->
+    <section class="glass-card" style="margin-top: 2.5rem; max-width: 1200px; margin-left: auto; margin-right: auto;" id="history-section">
+        <h2 style="font-size: 1.8rem; color: var(--accent); display: flex; align-items: center; gap: 10px;"><i class="fa-solid fa-clock-rotate-left"></i> Sleep History (Last 7 Days)</h2>
+        <div id="history-chart" style="display: flex; align-items: flex-end; gap: 12px; height: 180px; padding: 1rem 0;"></div>
+        <p id="history-empty" style="color: var(--text-secondary); text-align: center; padding: 2rem 0;">No history yet. Your scores will appear here after you start tracking.</p>
+    </section>
+
+    <!-- Achievement Toast -->
+    <div id="achievement-toast" style="display: none; position: fixed; bottom: 100px; left: 30px; background: rgba(0,240,255,0.15); border: 1px solid var(--accent); color: #fff; padding: 1rem 1.5rem; border-radius: 12px; z-index: 1000; backdrop-filter: blur(10px); box-shadow: 0 0 20px rgba(0,240,255,0.3); animation: fadeInUp 0.3s ease;">
+        <span id="achievement-text"></span>
+    </div>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle-btn" id="theme-toggle-btn" title="Toggle Theme">
+        <i class="fa-solid fa-circle-half-stroke"></i>
+    </button>
+
     <script src="script.js"></script>
 </body>
 </html>
